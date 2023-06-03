@@ -1,5 +1,5 @@
 from time import sleep
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from itertools import islice
 
 

@@ -1,5 +1,5 @@
 import concurrent.futures
-import connection_tester
+import scripts.connection_tester as connection_tester
 import time
 
 ct = connection_tester.ConnectionTester()
