@@ -39,32 +39,41 @@ def get_env_variables():
 
 
 def main():
-    get_env_variables()
     if len(sys.argv) == 1:
         start_whole_program()
     elif len(sys.argv) == 2:
         match sys.argv[1]:
             case "-sl":
+                get_env_variables()
                 print ("Skipping the list creation, starting with the partitioning...\n")
                 print (f"Partitioning the list into {THREADS} files...\n")
                 list_partitioner.start_splitting(FULL_LIST_NAME, THREADS, SEPARATED_LISTS_FOLDER)
                 print ("\nThe list has been partitioned, starting the threads...\n")
                 ip_tester.start_threads(THREADS, os.path.join(EXECUTING_PATH, SEPARATED_LISTS_FOLDER))
             case "-sp":
+                get_env_variables()
                 print ("Skipping the list creation and the partitioning, starting with the threads...\n")
                 ip_tester.start_threads(THREADS, os.path.join(EXECUTING_PATH, SEPARATED_LISTS_FOLDER))
             case "-nt":
+                get_env_variables()
                 print ("Creating the whole list and partitionning it, skipping the threads...\n")
                 lines_written = ip_maker.make_full_list(os.path.join(EXECUTING_PATH, IP_TABLE_NAME), output_path=FULL_LIST_NAME)
                 print (f"\nFull list has been created, {lines_written} lines written")
                 print (f"Partitioning the list into {THREADS} files...\n")
                 list_partitioner.start_splitting(FULL_LIST_NAME, THREADS, SEPARATED_LISTS_FOLDER)
+            case "-np":
+                print ("Using the values from the global variables...\n")
+                print (f"Patitioning the list into {THREADS} files\n")
+                list_partitioner.start_splitting(FULL_LIST_NAME, THREADS, SEPARATED_LISTS_FOLDER)
+                print ("\nThe list has been partitioned, starting the threads...\n")
+                ip_tester.start_threads(THREADS, os.path.join(EXECUTING_PATH, SEPARATED_LISTS_FOLDER))
             case "-h":
                 print ("Usage: python run.py [option]\n")
                 print ("Options:")
                 print ("-sl\t\tSkip the list creation, start with the partitioning")
                 print ("-sp\t\tSkip the list creation and the partitioning, start with the threads")
                 print ("-nt\t\tCreate the whole list and partition it, skip the threads")
+                print ("-np\t\tNo prompt, use the values from the global variables, start with the partitioning")
                 print ("-h\t\tShow this help message")
 
 

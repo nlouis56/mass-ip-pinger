@@ -6,7 +6,7 @@ Python scripts to generate lists of "up" ips from standard ip attribution tables
 
 ## Specifications
 
-- Python 3.10 (any version of python 3 should work)
+- Python 3.11 (any version of python 3 should work if you replace the match case statement in `run.py`)
 - Cross platform (tested on Windows and Linux)
 - No external dependencies except the "requests" library
 
@@ -29,11 +29,13 @@ Every operation is using as many threads as possible and sensible. The script fo
 1. Clone the repository
 2. Install the dependency `requests` with `pip install requests`
 3. Run the script with `python run.py`
-> Note: All the filepaths are determined in the global variables at the top of the script. You can change them to your liking.
+> Note: All the filepaths are determined in the global variables at the top of the script. You can change them to your liking, or use the confirmation prompt to change them at runtime.
 
 ## Example
 
 The file `google_ips` contains a list of ip ranges for Google. The script will generate a list of "up" ips and a list of "down" ips.
+
+The file `french_ip_list` contains a list of ip ranges for France, retrieved from [ip2location.com](https://lite.ip2location.com/france-ip-address-ranges).
 
 You just have to change the `INPUT_FILE` variable to the path of the file containing the ip ranges.
 
@@ -41,10 +43,11 @@ The script will then run, and generate a list of n files containing the results 
 
 ## TODO
 
+- Find a way to restart the threads when they crash or get stuck (happens sometimes, i don't know why)
 - Make the prints a little prettier
 - Add a script to recombine the "up" and "down" lists into a single list
 - Add a script to scan for open ports on the "up" ips
 
 ## License
 
-This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details
+This project is licensed under the GPL-3.0 License - see the [GPL-3.0 License](https://www.gnu.org/licenses/gpl-3.0.en.html) for details.
