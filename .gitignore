@@ -3,6 +3,8 @@ CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 Makefile
+build/
+reference-tables/
 
 *.log
 *.full
