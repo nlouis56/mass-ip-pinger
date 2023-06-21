@@ -47,7 +47,7 @@ static std::vector<std::string> unwrap_line(std::string line)
     return unwrapped;
 }
 
-static std::vector<std::string> load_file(std::string filepath)
+std::vector<std::string> load_file(std::string filepath)
 {
     std::ifstream file(filepath);
     std::vector<std::string> lines;
@@ -113,6 +113,55 @@ static std::vector<std::string> unwrapSeparatedLists(std::vector<std::string> li
         }
         out.close();
         unwrappedListsPaths.push_back(path + ".full");
+    }
+    return unwrappedListsPaths;
+}
+
+std::vector<std::string> unwrapListsIfNecessary(std::vector<std::string> listsPaths)
+{
+    std::vector<std::string> unwrappedListsPaths;
+    for (std::string path : listsPaths)
+    {
+        std::vector<std::string> lines = load_file(path);
+        bool toUnwrap = false;
+        bool isValidUnwrapped = false;
+        for (auto line : lines) {
+            if (split(line, ";").size() == 3 || line.empty())
+            {
+                toUnwrap = true;
+            } else {
+                toUnwrap = false;
+                break;
+            }
+        }
+        if (toUnwrap)
+        {
+            std::string unwrapped = unwrapSingularList(path);
+            unwrappedListsPaths.push_back(unwrapped);
+            std::cout << "Unwrapped " << path << " to " << unwrapped << std::endl;
+            continue;
+        } else {
+            for (auto line : lines)
+            {
+                try
+                {
+                    IP ip(line);
+                    isValidUnwrapped = true;
+                }
+                catch (std::invalid_argument e)
+                {
+                    error("Invalid IP in list (" + path + ")");
+                    std::cout << path << "is not a valid list, ignoring..." << std::endl;
+                    isValidUnwrapped = false;
+                    break;
+                }
+            }
+            if (isValidUnwrapped)
+            {
+                std::cout << path << " is a valid list, using it as is" << std::endl;
+                unwrappedListsPaths.push_back(path);
+            }
+        }
     }
     return unwrappedListsPaths;
 }

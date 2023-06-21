@@ -38,7 +38,7 @@ void ipVectorMaker(std::string listPath, std::vector<IP>& ips)
     }
 }
 
-void ip_tester(std::string listPath, std::string outPath)
+void ip_tester(std::vector<std::string> ipStrings, std::string outPath)
 {
     std::vector<IP> ips;
     std::string strIp;
@@ -47,13 +47,21 @@ void ip_tester(std::string listPath, std::string outPath)
     timeout.tv_sec = 0;
     timeout.tv_usec = 500000;
 
-    // get ips from file into vector
-    ipVectorMaker(listPath, ips);
+    for (auto &ipString : ipStrings)
+    {
+        try {
+            ips.push_back(IP(ipString));
+        } catch (std::exception& e) {
+            error(e.what());
+            continue;
+        }
+    }
+    debug("converted " + std::to_string(ips.size()) + " ips to IP objects in thread " + outPath);
     // for each ip in vector
     for (auto &ip : ips)
     {
         int latency = ip.ping(timeout);
-        //debug("Pinging " + ip.toString() + " with timeout " + std::to_string(timeout.tv_usec) + "ms. Latency: " + std::to_string(latency) + "ms");
+        debug("Pinged " + ip.toString() + " with timeout " + std::to_string(timeout.tv_usec) + "ms. Latency: " + std::to_string(latency) + "ms");
         if (latency != -1)
         {
             //debug(ip.toString() + " is up, latency: " + std::to_string(latency) + "ms");
@@ -90,10 +98,10 @@ void ip_tester(std::string listPath, std::string outPath)
     // write remaining ips to file
     batchIptable(ssBatchWrite.str(), outPath);
     debug(std::to_string(ssBatchWrite.str().length()) + " remaining characters written to " + outPath);
-    debug("ip_tester() finished on file " + listPath);
-    std::cout << "Finished testing IPs in " << listPath << std::endl;
-    std::ifstream inFile(outPath);
-    int up_ips_count = std::count(std::istreambuf_iterator<char>(inFile), std::istreambuf_iterator<char>(), '\n');
-    debug(std::to_string(up_ips_count) + " IPs are up from" + std::to_string(listPath.size()) + " IPs");
+    debug("ip_tester() finished writing " + outPath);
+    std::cout << "Finished writing " << outPath << std::endl;
+    std::ifstream outFile(outPath);
+    int up_ips_count = std::count(std::istreambuf_iterator<char>(outFile), std::istreambuf_iterator<char>(), '\n');
+    debug(std::to_string(up_ips_count) + " IPs are up from" + std::to_string(ipStrings.size()) + " IPs");
     return;
 }
