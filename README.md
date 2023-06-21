@@ -7,22 +7,22 @@ A simple tool to ping a list of IP addresses, and check for interesting ports le
 ## Usage
 
 ```
-sudo ./ipPinger --list-maker 16 google_ips output
+sudo ./ipPinger --unwrap google_ips --run-tests 16
 ```
 
 > Using sudo is required to send ICMP packets on linux.
 
-This will ping all IP addresses specified in the file `google_ips` (ip ranges attributed to google for crawlers and such), and output the results to `output`.
+This will ping all IP addresses specified in the file `google_ips` (ip ranges attributed to google for crawlers and such), and output the results to `testedIps`.
 
 See the formatting used in `google_ips` to create your own list of IP addresses to ping.
 
-You can also use an already existing list of IP addresses, you will have to run the program with `--use-unwrapped` instead of `--list-maker`. The program will then expect the IP addresses to be separated by a newline.
+You can also use an already existing list of IP addresses, you will have to run the program with `--use-unwrapped` instead of `--unwrap`. The program will then expect the IP addresses to be separated by a newline.
 
 ```
-sudo ./ipPinger --use-unwrapped 16 ips
+sudo ./ipPinger --use-unwrapped ips --run-tests 16
 ```
 
-This option does not require the `output` argument. It will output the results to `testedIps` by default.
+As the previous command, it will output the results to `testedIps` by default.
 
 The program will create n*2 output files, where n is the number of threads used to ping (16, in the example). You can be generous with the number of threads, as the program will encounter many timeouts.
 
