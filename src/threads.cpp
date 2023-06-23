@@ -61,7 +61,7 @@ void ip_tester(std::vector<std::string> ipStrings, std::string outPath)
     for (auto &ip : ips)
     {
         int latency = ip.ping(timeout);
-        debug("Pinged " + ip.toString() + " with timeout " + std::to_string(timeout.tv_usec) + "ms. Latency: " + std::to_string(latency) + "ms");
+        //debug("Pinged " + ip.toString() + " with timeout " + std::to_string(timeout.tv_usec) + "ms. Latency: " + std::to_string(latency) + "ms");
         if (latency != -1)
         {
             //debug(ip.toString() + " is up, latency: " + std::to_string(latency) + "ms");

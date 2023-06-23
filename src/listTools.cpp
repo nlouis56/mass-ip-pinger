@@ -41,7 +41,8 @@ static std::vector<std::string> unwrap_line(std::string line)
         unwrapped.push_back(end.toString());
         if ((int)unwrapped.size() != std::stoi(wrapped[2]))
         {
-            debug("Unwrapped size: " + std::to_string(unwrapped.size()) + " Expected size: " + wrapped[2]);
+            // uncomment this if ip unwrapping does some weird shit
+            //debug("Unwrapped size: " + std::to_string(unwrapped.size()) + " Expected size: " + wrapped[2]);
         }
     }
     return unwrapped;
@@ -181,9 +182,9 @@ std::vector<std::string> listMaker(std::string tablePath, std::string outPathBas
     fullTable.erase(std::unique(fullTable.begin(), fullTable.end()), fullTable.end());
     size_t linesPerFile = fullTable.size() / filecount;
     size_t linesLeft = fullTable.size() % filecount;
-    debug("Lines in table: " + std::to_string(fullTable.size()));
-    debug("Lines per file: " + std::to_string(linesPerFile));
-    debug("Lines left: " + std::to_string(linesLeft));
+    //debug("Lines in table: " + std::to_string(fullTable.size()));
+    //debug("Lines per file: " + std::to_string(linesPerFile));
+    //debug("Lines left: " + std::to_string(linesLeft));
     size_t currentLine = 0;
     for (size_t i = 0; i < filecount; i++)
     {
