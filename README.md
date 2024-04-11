@@ -9,59 +9,51 @@ A simple tool to ping a list of IP addresses, and check for interesting ports le
 ## Usage
 
 ```
-sudo ./ipPinger --unwrap google_ips --run-tests 16
+cargo run -- -f google_ips.csv -p ports.txt
 ```
 
-> Using sudo is required to send ICMP packets on linux.
-
-This will ping all IP addresses specified in the file `google_ips` (ip ranges attributed to google for crawlers and such), and output the results to `testedIps`.
-
-See the formatting used in `google_ips` to create your own list of IP addresses to ping.
-
-You can also use an already existing list of IP addresses, you will have to run the program with `--use-unwrapped` instead of `--unwrap`. The program will then expect the IP addresses to be separated by a newline.
+or
 
 ```
-sudo ./ipPinger --use-unwrapped ips --run-tests 16
+ip-pinger[.exe] -f google_ips.csv -p ports.txt
 ```
 
-As the previous command, it will output the results to `testedIps` by default.
+This will ping all IP addresses specified in the file `google_ips.csv` (ip ranges attributed to google for crawlers and such) and check for open ports specified in the file `ports.txt`.
 
-The program will create n output files, where n is the number of threads used to ping (16, in the example). You can be generous with the number of threads, as the program will encounter many waiting periods while testing the ips (the tasks are not cpu-bound, so you can reduce the compute time by using more threads).
+The files are in the CSV format, with no headers, for example:
 
-You can then use the `recombiner.py` script to combine the output files into one.
-
-```
-python3 recombiner.py
+```csv
+0.0.0.0;255.255.255.255
 ```
 
-This will create a file called `recombined.out` containing all the results. Only the IP addresses that responded to the ping will be kept.
+This will ping all the ip addresses of the internet (not really, but you get the idea).
+
+Some websites provide lists of ip addresses containing the ranges and also the quantity of addresses in the range. Here, the quantity is not taken into account, only the start and end addresses are used.
+
+The ports file is a simple list of ports, for example:
+
+```txt
+80
+443
+```
+
+This will check if the ports 80 and 443 are open on the target ip addresses (if the target is reachable).
 
 ## Output
 
-The output file will contain the IP address, followed by a list of ports that were open. The ports are separated by a comma.
-
-```
-<IP address>;<host name>;[<open port>,<open port>,...]
-```
+It doesn't output anything yet, the goal is to stuff the results in some kind of database for easy querying.
 
 ## Building
 
 ```
-cmake .
-make
+cargo build --release
 ```
 
-(you will need cmake and a c++ compiler)
+(you will need cargo and rust installed, see [rustup](https://rustup.rs/))
 
 ## System requirements
 
-This program was tested on Debian 11. It should work on any linux distribution, and on Windows (I don't know if WSL allows access to the sockets).
-
-It needs access to the raw socket, so it needs to be run as root especially on linux.
-
-I've tested it with 16 threads on an Intel Core 2 Duo with 8GB of RAM (2 cores, 2 threads), and it worked fine. It should work on any modern computer.
-
-Be careful, there are no checks performed to see if the number of threads is coherent, you can easily crash your computer by using too many threads. Same goes for the number of IP addresses to ping. It will probably work with all the 4,2 billion IP addresses, but you'll need a few gigabytes of RAM. The program loads the IP addresses in memory, so the input file should not be bigger than the size of one of your ram sticks. The program performs a quick check to see if the input file is too big, but I've not tested the thing to see if it works.
+This program was tested on Windows 11. It should work pretty much everywhere as long as you have a working rust installation.
 
 ## Disclaimer
 
