@@ -1,6 +1,8 @@
 # mass-ip-pinger
 
-> Now in C++!
+> Recoding the thing in rust !
+
+For the other versions, see the branches.
 
 A simple tool to ping a list of IP addresses, and check for interesting ports left open.
 
