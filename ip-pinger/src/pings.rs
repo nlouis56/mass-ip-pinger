@@ -5,11 +5,32 @@ use dns_lookup::getnameinfo;
 use fastping_rs::PingResult::{Idle, Receive};
 use fastping_rs::Pinger;
 
+#[derive(Clone)]
 pub struct IpProperties {
     pub ip: Ipv4Addr,
     pub up: bool,
     pub rtt: Duration,
     pub hostname: String,
+}
+
+impl IpProperties {
+    pub fn new(ip: Ipv4Addr, up: bool, rtt: Duration, hostname: String) -> IpProperties {
+        IpProperties {
+            ip,
+            up,
+            rtt,
+            hostname,
+        }
+    }
+
+    pub fn clone(&self) -> IpProperties {
+        IpProperties {
+            ip: self.ip,
+            up: self.up,
+            rtt: self.rtt,
+            hostname: self.hostname.clone(),
+        }
+    }
 }
 
 fn gethostname(ip: Ipv4Addr) -> String {
@@ -22,17 +43,17 @@ fn gethostname(ip: Ipv4Addr) -> String {
     };
 }
 
-pub fn runpings(addresses: Vec<Ipv4Addr>, timeout: u64) -> Vec<IpProperties> {
+pub fn runpings(addresses: Vec<Ipv4Addr>, _: u64 /* timeout */ ) -> Vec<IpProperties> {
     let mut properties: Vec<IpProperties> = Vec::new();
-    let (pinger, results) = match Pinger::new(Some(timeout), None) {
+    let (pinger, results) = match Pinger::new(None, None) {
         Ok((pinger, results)) => (pinger, results),
         Err(e) => panic!("Error creating pinger: {}", e),
     };
-    println!("Pinger created with timeout of {} ms", timeout);
+    //println!("Pinger created with timeout of {} ms", timeout);
     for ip in &addresses {
         pinger.add_ipaddr(&ip.to_string());
     }
-    println!("Pinging {} addresses", addresses.len());
+    //println!("Pinging {} addresses", addresses.len());
     pinger.ping_once();
     loop {
         match results.recv() {
@@ -45,7 +66,7 @@ pub fn runpings(addresses: Vec<Ipv4Addr>, timeout: u64) -> Vec<IpProperties> {
                         rtt: Duration::from_millis(0),
                         hostname: String::from("Unknown"),
                     };
-                    println!("{} is down", v4addr);
+                    //println!("{} is down", v4addr);
                     properties.push(props);
                 }
                 Receive { addr, rtt } => {

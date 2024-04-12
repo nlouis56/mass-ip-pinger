@@ -1,9 +1,12 @@
 use clap::Parser;
 use std::net::Ipv4Addr;
+use rand::{seq::SliceRandom, thread_rng};
 
-use crate::pings::{runpings, IpProperties};
+use crate::pings::runpings;
 pub mod parser;
 pub mod pings;
+pub mod stats;
+pub mod saver;
 
 #[derive(Parser)]
 #[command(name = "ip-pinger", version, about)]
@@ -17,12 +20,16 @@ struct Args {
     ports: String,
 
     /// Do a full port scan (1-65535)
-    #[arg(long)]
+    #[arg(long, default_value = "false")]
     full: bool,
 
     /// The number of threads to use
     #[arg(short, long, default_value = "16")]
     threads: usize,
+
+    /// The number of slices to make from the list
+    #[arg(short, long, default_value = "256")]
+    slices: usize,
 
     /// The timeout for each ping in milliseconds
     #[arg(short = 'b', long, default_value = "500")]
@@ -51,6 +58,10 @@ fn cli() -> Args {
     let mut threads = String::new();
     std::io::stdin().read_line(&mut threads).unwrap();
     let threads: usize = threads.trim().parse().unwrap();
+    println!("Enter the number of slices to make from the list: ");
+    let mut slices = String::new();
+    std::io::stdin().read_line(&mut slices).unwrap();
+    let slices: usize = slices.trim().parse().unwrap();
     println!("Enter the timeout for each ping in milliseconds: ");
     let mut timeout = String::new();
     std::io::stdin().read_line(&mut timeout).unwrap();
@@ -60,6 +71,7 @@ fn cli() -> Args {
         ports,
         full,
         threads,
+        slices,
         timeout,
     };
 }
@@ -79,6 +91,23 @@ fn make_ip_chunks(ips: Vec<Ipv4Addr>, threads: usize) -> Vec<Vec<Ipv4Addr>> {
     chunks
 }
 
+fn threader(chunks: Vec<Vec<Ipv4Addr>>, thread_qty: usize, timeout: u64) {
+    for chunk in chunks {
+        let mut threads = Vec::new();
+        let threads_data = make_ip_chunks(chunk, thread_qty);
+        for data in threads_data {
+            let thread = std::thread::spawn(move || runpings(data, timeout));
+            threads.push(thread);
+        }
+        for finished in threads {
+            let chunk_addresses = finished.join().unwrap();
+            stats::show_stats(&chunk_addresses);
+            let (up, _) = stats::sort_up_from_down(&chunk_addresses);
+            saver::save_to_file(&up, "up_ips.csv");
+        }
+    }
+}
+
 fn main() {
     let args: Args;
     println!("received {} arguments", std::env::args().len());
@@ -95,15 +124,14 @@ fn main() {
         std::process::exit(1);
     }
     println!("Will be running on {} with {} threads", args.file, args.threads);
-    let ips = parser::main(&args.file);
+    let mut rng = thread_rng();
+    let mut ips = parser::main(&args.file);
+    println!("Shuffling IPs...");
+    ips.shuffle(&mut rng);
+    println!("Shuffled !");
     // split the ips into threads chunks
-    let chunks = make_ip_chunks(ips, args.threads);
+    let chunks = make_ip_chunks(ips, args.slices);
     println!("Separated IPs into {} chunks", chunks.len());
     // ping the ips
-    let mut addresses: Vec<IpProperties> = Vec::new();
-    for chunk in chunks {
-        let propchunk = runpings(chunk, args.timeout);
-        println!("Got {} properties from pinger", propchunk.len());
-        addresses.extend(propchunk);
-    }
+    threader(chunks, args.threads, args.timeout);
 }
