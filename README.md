@@ -51,9 +51,17 @@ cargo build --release
 
 (you will need cargo and rust installed, see [rustup](https://rustup.rs/))
 
+## Dependencies
+
+- [clap](https://crates.io/crates/clap) (for command line arguments)
+- [fastping-rs]() (to ping the addresses)
+- [dns-lookup](https://crates.io/crates/dns-lookup) (to get the hostname)
+
 ## System requirements
 
-This program was tested on Windows 11. It should work pretty much everywhere as long as you have a working rust installation.
+This program was tested on Debian 11. It should work on pretty much any Unix system as long as you have a working rust installation.
+
+> Note: The program is not compatible with Windows, as it uses `fastping-rs` to ping the addresses, which is not compatible with the windows sockets.
 
 ## Disclaimer
 
