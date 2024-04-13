@@ -43,8 +43,9 @@ fn gethostname(ip: Ipv4Addr) -> String {
     };
 }
 
-pub fn runpings(addresses: Vec<Ipv4Addr>, _: u64 /* timeout */ ) -> Vec<IpProperties> {
+pub fn runpings(addresses: Vec<Ipv4Addr>, _: u64 /* timeout */ ) -> (Vec<IpProperties>, u128) {
     let mut properties: Vec<IpProperties> = Vec::new();
+    let stopwatch = std::time::Instant::now();
     let (pinger, results) = match Pinger::new(None, None) {
         Ok((pinger, results)) => (pinger, results),
         Err(e) => panic!("Error creating pinger: {}", e),
@@ -84,7 +85,8 @@ pub fn runpings(addresses: Vec<Ipv4Addr>, _: u64 /* timeout */ ) -> Vec<IpProper
             Err(_) => panic!("Worker threads disconnected before the solution was found!"),
         }
         if properties.len() == addresses.len() {
-            return properties;
+            let elapsed = stopwatch.elapsed().as_millis();
+            return (properties, elapsed);
         }
     }
 }

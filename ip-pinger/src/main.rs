@@ -83,18 +83,23 @@ fn threader(mut chunks: Vec<Vec<Ipv4Addr>>, thread_qty: usize, timeout: u64) {
         if threads.len() < thread_qty {
             threads.push(std::thread::spawn(move || runpings(thread_data, timeout)));
         } else {
-            // Wait for a thread to finish before launching a new one
-            let thread = threads.remove(0);
-            let results = thread.join().unwrap(); // Handle thread panic gracefully if needed
-            let (up, _) = stats::sort_up_from_down(&results);
-            stats::show_stats(&results);
+            let mut idx: usize = 0;
+            while !threads[idx].is_finished() {
+                idx += 1;
+                if idx >= threads.len() {
+                    idx = 0;
+                }
+            }
+            let finished_thread = threads.swap_remove(idx);
+            let (result, elapsed) = finished_thread.join().unwrap();
+            stats::show_stats(&result, elapsed);
+            let (up, _) = stats::sort_up_from_down(&result);
             saver::save_to_file(&up, "up_ips.csv");
-            threads.push(std::thread::spawn(move || runpings(thread_data, timeout)));
         }
     }
     // Wait for remaining threads to finish
     for thread in threads {
-        let _ = thread.join().unwrap(); // Handle thread panic gracefully if needed
+        let _ = thread.join().unwrap();
     }
 }
 

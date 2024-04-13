@@ -15,7 +15,7 @@ pub fn save_to_file(properties: &Vec<IpProperties>, filename: &str) {
         data.push_str(&format!("{},{},{},{}\n", prop.ip, prop.up, prop.rtt.as_millis(), prop.hostname));
     }
     match file.write_all(data.as_bytes()) {
-        Ok(_) => println!("Data saved to {}", filename),
+        Ok(_) => (),
         Err(e) => panic!("Error writing to file: {}", e),
     };
 }
