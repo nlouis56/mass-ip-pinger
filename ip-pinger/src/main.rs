@@ -27,9 +27,10 @@ struct Args {
     #[arg(short, long, default_value = "16")]
     threads: usize,
 
-    /// The number of slices to make from the list
-    #[arg(short, long, default_value = "256")]
-    slices: usize,
+    /// The number of ips on which one thread should run
+    /// Influences the frequency of the stats output and the file saving
+    #[arg(long, default_value = "4096")]
+    bite: usize,
 
     /// The timeout for each ping in milliseconds
     #[arg(short = 'b', long, default_value = "500")]
@@ -58,10 +59,10 @@ fn cli() -> Args {
     let mut threads = String::new();
     std::io::stdin().read_line(&mut threads).unwrap();
     let threads: usize = threads.trim().parse().unwrap();
-    println!("Enter the number of slices to make from the list: ");
-    let mut slices = String::new();
-    std::io::stdin().read_line(&mut slices).unwrap();
-    let slices: usize = slices.trim().parse().unwrap();
+    println!("Enter the size of the bite for each thread: ");
+    let mut bite = String::new();
+    std::io::stdin().read_line(&mut bite).unwrap();
+    let bite: usize = bite.trim().parse().unwrap();
     println!("Enter the timeout for each ping in milliseconds: ");
     let mut timeout = String::new();
     std::io::stdin().read_line(&mut timeout).unwrap();
@@ -71,40 +72,29 @@ fn cli() -> Args {
         ports,
         full,
         threads,
-        slices,
+        bite,
         timeout,
     };
 }
 
-fn make_ip_chunks(ips: Vec<Ipv4Addr>, threads: usize) -> Vec<Vec<Ipv4Addr>> {
-    let mut chunks: Vec<Vec<Ipv4Addr>> = Vec::new();
-    let chunk_size = ips.len() / threads;
-    let mut i = 0;
-    for _ in 0..threads {
-        let mut chunk: Vec<Ipv4Addr> = Vec::new();
-        for _ in 0..chunk_size {
-            chunk.push(ips[i]);
-            i += 1;
-        }
-        chunks.push(chunk.to_vec());
-    }
-    chunks
-}
-
-fn threader(chunks: Vec<Vec<Ipv4Addr>>, thread_qty: usize, timeout: u64) {
-    for chunk in chunks {
-        let mut threads = Vec::new();
-        let threads_data = make_ip_chunks(chunk, thread_qty);
-        for data in threads_data {
-            let thread = std::thread::spawn(move || runpings(data, timeout));
-            threads.push(thread);
-        }
-        for finished in threads {
-            let chunk_addresses = finished.join().unwrap();
-            stats::show_stats(&chunk_addresses);
-            let (up, _) = stats::sort_up_from_down(&chunk_addresses);
+fn threader(mut chunks: Vec<Vec<Ipv4Addr>>, thread_qty: usize, timeout: u64) {
+    let mut threads = Vec::new();
+    while let Some(thread_data) = chunks.pop() {
+        if threads.len() < thread_qty {
+            threads.push(std::thread::spawn(move || runpings(thread_data, timeout)));
+        } else {
+            // Wait for a thread to finish before launching a new one
+            let thread = threads.remove(0);
+            let results = thread.join().unwrap(); // Handle thread panic gracefully if needed
+            let (up, _) = stats::sort_up_from_down(&results);
+            stats::show_stats(&results);
             saver::save_to_file(&up, "up_ips.csv");
+            threads.push(std::thread::spawn(move || runpings(thread_data, timeout)));
         }
+    }
+    // Wait for remaining threads to finish
+    for thread in threads {
+        let _ = thread.join().unwrap(); // Handle thread panic gracefully if needed
     }
 }
 
@@ -130,7 +120,9 @@ fn main() {
     ips.shuffle(&mut rng);
     println!("Shuffled !");
     // split the ips into threads chunks
-    let chunks = make_ip_chunks(ips, args.slices);
+    let chunks: Vec<Vec<Ipv4Addr>> = ips.chunks_exact(args.bite)
+        .map(|chunk| chunk.to_vec())
+        .collect();
     println!("Separated IPs into {} chunks", chunks.len());
     // ping the ips
     threader(chunks, args.threads, args.timeout);
