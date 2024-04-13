@@ -77,7 +77,7 @@ pub fn runpings(addresses: Vec<Ipv4Addr>, _: u64 /* timeout */ ) -> Vec<IpProper
                         rtt,
                         hostname: gethostname(v4addr),
                     };
-                    println!("{} is up with latency of {} ms. Host is {}", v4addr, props.rtt.as_millis() / 2, props.hostname);
+                    //println!("{} is up with latency of {} ms. Host is {}", v4addr, props.rtt.as_millis() / 2, props.hostname);
                     properties.push(props);
                 }
             },
