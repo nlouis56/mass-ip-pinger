@@ -71,7 +71,6 @@ fn update_global(chunk_stats: &Stats) -> Stats {
     };
     static mut TREATED_CHUNKS: usize = 1;
     let updated: Stats;
-    println!("chunk_stats: {}", chunk_stats.to_string());
     unsafe {
         if STATS.average_rtt.is_nan() {
             STATS.average_rtt = 1.0;
@@ -108,6 +107,6 @@ pub fn show_stats(properties: &Vec<IpProperties>, elapsed: u128) {
     let chunk_size = chunk_stats.up + chunk_stats.down;
     let total = global_stats.up + global_stats.down;
     if total % (chunk_size * 16) == 0 {
-        println!("GLOBAL STATS : {}", global_stats.to_string());
+        println!("{}", global_stats.to_string());
     }
 }
