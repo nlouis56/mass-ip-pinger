@@ -1,9 +1,6 @@
 use std::time::Duration;
-use std::net::{Ipv4Addr, SocketAddr};
-use std::str::FromStr;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use dns_lookup::getnameinfo;
-use fastping_rs::PingResult::{Idle, Receive};
-use fastping_rs::Pinger;
 
 #[derive(Clone)]
 pub struct IpProperties {
@@ -33,8 +30,8 @@ impl IpProperties {
     }
 }
 
-fn gethostname(ip: Ipv4Addr) -> String {
-    let socketaddr = SocketAddr::new(ip.into(), 0);
+fn gethostname(ip: IpAddr) -> String {
+    let socketaddr = SocketAddr::new(ip, 0);
     let flags = 0;
 
     match getnameinfo(&socketaddr, flags) {
@@ -43,50 +40,57 @@ fn gethostname(ip: Ipv4Addr) -> String {
     };
 }
 
-pub fn runpings(addresses: Vec<Ipv4Addr>, _: u64 /* timeout */ ) -> (Vec<IpProperties>, u128) {
-    let mut properties: Vec<IpProperties> = Vec::new();
-    let stopwatch = std::time::Instant::now();
-    let (pinger, results) = match Pinger::new(None, None) {
-        Ok((pinger, results)) => (pinger, results),
-        Err(e) => panic!("Error creating pinger: {}", e),
+fn scansingleport(ip: Ipv4Addr, port: u16, timeout: u64) -> bool {
+    let socketaddr = SocketAddr::new(IpAddr::V4(ip), port);
+    match std::net::TcpStream::connect_timeout(&socketaddr, Duration::from_millis(timeout)) {
+        Ok(_) => {return true},
+        Err(_) => {return false},
     };
-    //println!("Pinger created with timeout of {} ms", timeout);
-    for ip in &addresses {
-        pinger.add_ipaddr(&ip.to_string());
-    }
-    //println!("Pinging {} addresses", addresses.len());
-    pinger.ping_once();
-    loop {
-        match results.recv() {
-            Ok(result) => match result {
-                Idle { addr } => {
-                    let v4addr = Ipv4Addr::from_str(&addr.to_string()).unwrap();
-                    let props = IpProperties {
-                        ip: v4addr,
-                        up: false,
-                        rtt: Duration::from_millis(0),
-                        hostname: String::from("Unknown"),
-                    };
-                    //println!("{} is down", v4addr);
-                    properties.push(props);
-                }
-                Receive { addr, rtt } => {
-                    let v4addr = Ipv4Addr::from_str(&addr.to_string()).unwrap();
-                    let props = IpProperties {
-                        ip: v4addr,
-                        up: true,
-                        rtt,
-                        hostname: gethostname(v4addr),
-                    };
-                    //println!("{} is up with latency of {} ms. Host is {}", v4addr, props.rtt.as_millis() / 2, props.hostname);
-                    properties.push(props);
-                }
-            },
-            Err(_) => panic!("Worker threads disconnected before the solution was found!"),
-        }
-        if properties.len() == addresses.len() {
-            let elapsed = stopwatch.elapsed().as_millis();
-            return (properties, elapsed);
+}
+
+pub fn scanports_st(ip: Ipv4Addr, ports: &Vec<u16>, timeout: u64) -> Vec<u16> {
+    let mut open_ports: Vec<u16> = Vec::new();
+    for &port in ports {
+        let open = scansingleport(ip, port, timeout);
+        if open {
+            open_ports.push(port);
         }
     }
+    return open_ports;
+}
+
+pub fn scanports_mt(ip: Ipv4Addr, ports: &Vec<u16>, timeout: u64) -> Vec<u16> {
+    let mut open_ports: Vec<u16> = Vec::new();
+    let mut threads = Vec::new();
+    for &port in ports {
+        let ip = ip.clone();
+        threads.push(std::thread::spawn(move || {
+            return scansingleport(ip, port, timeout);
+        }));
+    }
+    for (idx, thread) in threads.into_iter().enumerate() {
+        let thread_result: bool = thread.join().unwrap();
+        if thread_result {
+            println!("Port {} is open on {}", ports[idx], ip.to_string());
+            open_ports.push(ports[idx]);
+        }
+    }
+    return open_ports;
+}
+
+pub fn runpings(addresses: Vec<Ipv4Addr>, _: u64 /* timeout, unused */ ) -> Vec<IpProperties> {
+    let mut properties: Vec<IpProperties> = Vec::new();
+    for ip in addresses {
+        let up: bool;
+        let stopwatch = std::time::Instant::now();
+        let hostname = gethostname(IpAddr::V4(ip));
+        let rtt = stopwatch.elapsed();
+        if hostname == "Unknown" || hostname == ip.to_string() {
+            up = false;
+        } else {
+            up = true;
+        }
+        properties.push(IpProperties::new(ip, up, rtt, hostname));
+    }
+    return properties;
 }

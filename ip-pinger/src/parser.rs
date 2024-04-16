@@ -65,7 +65,7 @@ fn unwrap_ips(record: IpRange) -> Vec<Ipv4Addr> {
     ips
 }
 
-pub fn main(filepath: &String) -> Vec<Ipv4Addr> {
+pub fn parse_ips(filepath: &String) -> Vec<Ipv4Addr> {
     let records: Vec<IpRange> = read_csv(filepath);
     let mut valid_records: Vec<IpRange> = Vec::new();
     for record in records {
@@ -81,4 +81,20 @@ pub fn main(filepath: &String) -> Vec<Ipv4Addr> {
     }
     println!("{} IPs found after unwrapping", ips.len());
     ips
+}
+
+pub fn parse_ports(filepath: &String) -> Vec<u16> {
+    let mut contents: Vec<u16> = Vec::new();
+    if let Ok(lines) = read_lines(filepath) {
+        // Consumes the iterator, returns an (Optional) String
+        for line in lines.flatten() {
+            let port: u32 = line.parse().unwrap();
+            if (port >= 1) && (port <= 65535) {
+                contents.push(port as u16);
+            } else {
+                println!("Port {} is out of range", port);
+            }
+        }
+    }
+    contents
 }

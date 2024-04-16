@@ -19,3 +19,18 @@ pub fn save_to_file(properties: &Vec<IpProperties>, filename: &str) {
         Err(e) => panic!("Error writing to file: {}", e),
     };
 }
+
+pub fn save_ports_to_file(ip: &IpProperties, ports: &Vec<u16>, filename: &str) {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .create(true)
+        .open(filename)
+        .unwrap();
+    let open_ports: String = format!("[{:?}]", &ports.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(","));
+    let data = format!("{},{},{}\n", ip.ip.to_string(), ip.hostname, open_ports);
+    match file.write_all(data.as_bytes()) {
+        Ok(_) => (),
+        Err(e) => panic!("Error writing to file: {}", e),
+    };
+}
